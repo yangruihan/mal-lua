@@ -224,10 +224,11 @@ function readAtom(reader)
     elseif string.match(token, "^:") then
         ret = Value.keyword(token)
     elseif string.match(token, '^"') then
+        token = string.sub(token, 2, -2)
         for i, k in ipairs(Types.EscapeChar) do
             token = string.gsub(token, k[1], k[2])
         end
-        ret = Value.string(string.sub(token, 2, -2))
+        ret = Value.string(token)
     else
         ret = Value.symbol(token)
     end
@@ -239,6 +240,10 @@ end
 ---@return Value
 function readForm(reader)
     local token = reader:peek()
+    if not token then
+        return nil
+    end
+
     if token == "(" then
         return readList(reader)
     elseif token == "[" then
@@ -317,6 +322,23 @@ function M.readStr(source)
 
     local reader = Reader(tokens)
     return readForm(reader)
+end
+
+function M.readStrAll(source)
+    local tokens = tokenize(source)
+    if #tokens == 0 then
+        return Value.Nil
+    end
+
+    local reader = Reader(tokens)
+    local ret = {}
+    local value = readForm(reader)
+    while value do
+        table.insert(ret, value)
+        value = readForm(reader)
+    end
+
+    return ret
 end
 
 return M
